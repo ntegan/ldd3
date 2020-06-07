@@ -1,1 +1,0 @@
-cmd_/home/ntegan/Documents/ldd3/modules/a.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ntegan/Documents/ldd3/modules/a.ko /home/ntegan/Documents/ldd3/modules/a.o /home/ntegan/Documents/ldd3/modules/a.mod.o;  true

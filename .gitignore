@@ -1,2 +1,2 @@
 modules/*.ko
-modules/{*.mod,*.mod.c,*.mod.o,*.o,*.a,*.order,*.symvers}
+modules/{*.mod,*.mod.c,*.mod.o,*.o,*.a,*.order,*.symvers,.*.cmd,*.cmd}

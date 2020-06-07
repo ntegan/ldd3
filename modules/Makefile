@@ -13,7 +13,7 @@ KDIR ?= ../../hello_modules/linux
 default:
 	$(MAKE) -C $(KDIR) M=$$PWD
 clean:
-	rm -f *.mod *.mod.c *.mod.o *.o *.a *.order *.symvers
+	rm -f *.mod *.mod.c *.mod.o *.o *.a *.order *.symvers .*.cmd
 clean2: clean
 	rm -f *.ko
 
