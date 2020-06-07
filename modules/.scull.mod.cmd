@@ -1,0 +1,1 @@
+cmd_/home/ntegan/Documents/ldd3/modules/scull.mod := { echo  /home/ntegan/Documents/ldd3/modules/scull/main.o /home/ntegan/Documents/ldd3/modules/scull/pipe.o /home/ntegan/Documents/ldd3/modules/scull/access.o; echo; } > /home/ntegan/Documents/ldd3/modules/scull.mod
