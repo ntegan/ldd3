@@ -212,5 +212,41 @@ module_exit(hello_exit);
 //  Blocking and Nonblocking Operations
 //  ===================================
 //
+//  Sometimes want operations to not block, even if cannot completely finish.
+//
+//  Explicit nonblocking I/O indicated by O_NONBLOCK in filp->f_flags.
+//  flag defined in <linux/fcntl.h> auto incl by <linux/fs.h>
+//  gets its name from "open-nonblock", specified at open time.
+//  
+//  Normal blocking behavior:
+//  process calls read, but no data yet available then the process blocks.
+//  process awakened as soon as some data arrives, and that data is returned
+//  even if data is less than amount requested in count argument to the method.
+//
+//  process calls write, no space in buffer. process must block
+//  on a different wait queue than the wait queue used for reading.
+//  when some data written to the hardware device, and space free in the
+//  output buffer, process awaken and write call succeeds although data
+//  may only be partially written if isn't room in the buffer for the requested
+//  count bytes.
+//
+//  these assume that there are both in and output buffers.
+//  input buffer required to avoid losing data arriving when nobody is reading.
+//  data cannot be lost on write, but output buff useful for better hw perfmnce
+//  due to reduced number of context switches and user/kernel transitions.
+//
+//  Read and write behavior of O_NONBLOCK specified.
+//  calls simply return -EAGAIN (try it again) if read and no data available
+//  or if write and no space in the buffer
+//
+//  can also make a blocking/nonblocking open for device initialization.
+//
+//  only read,write,open are affected by O_NONBLOCK
+//
+//
+//
+//  A Blocking I/O Example
+//  ======================
+//
 //
 //
