@@ -93,3 +93,179 @@ module_exit(hello_exit);
 //  Linux equivalent of V is up
 //  void up(struct semaphore *sem);
 //
+//
+//
+//  Using Semaphores in scull
+//  =========================
+//  Each daevice has a sem. Note it is init'd before scull made available
+//  to the rest of system. i.e. init_MUTEX b4 scull_setup_cdev
+//
+//  if (down_interruptible(&dev->sem))
+//      return -ERESTARTSYS;
+//  typical way of dealing with failure.
+//  higher layers of kernel will restart call or return error to user.
+//  Should undo user-visible stuff before return the error.
+//  otherwise if cannot undo things, do -EINTR
+//
+//
+//  Reader Writer Semaphores
+//  ========================
+//  what if tasks only need to read protected data structures,
+//  and some other tasks must make changes.
+//  thus: could allow multiple concurrent readers, if they don't try to change.
+//
+//  rwsem <linux/rwsem.h>
+//  struct rw_semaphore.
+//  void init_rwsem(struct rw_semaphore *sem);
+//
+//  for r/o access
+//  void down_read(struct rw_semaphore *sem);
+//      may put calling process into an uninterruptible sleep
+//  int down_read_trylock(struct rw_semaphore *sem);
+//      won't wait if read access unavailable.
+//      nonzero if access granted, 0 otherwise.
+//      differs from most kernel fncs where success indicated by ret 0.
+//  void up_read(struct rw_semaphore *sem);
+//
+//  for write access
+//  void down_write(struct rw_semaphore *sem);
+//  int down_write_trylock(struct rw_semaphore *sem);
+//  void up_write(struct rw_semaphore *sem);
+//  void downgrade_write(struct rw_semaphore *sem);
+//      for case where writer lock needed for quick change, followed
+//      by longer period of r/o access
+//
+//  possible to starve readers (when large number of writers who have priority
+//    are waiting).
+//  thus it's best to use when write access used rarely and for short periods
+//  of time.
+//
+//
+//
+//  Completions
+//  ===========
+//  common pattern in kernel, initiate activity outside current thread
+//  and wait for that activity to complete.
+//  could be creation of a new kernel thread, 
+//  or user-space process,
+//  request to existing process,
+//  or some hardware-based action
+//
+//  struct semaphore sem;
+//  start_external_task(&sem);
+//  down(&sem);
+//
+//  external task call up(&sem) when its work is done
+//  but sem not best tool for this sitch
+//
+//  completion interface in 2.4.7 kernel <linux/completion.h>
+//  DECLARE_COMPLETION(my_completion);
+//  or dynamically
+//  struct completion my_completion;
+//  /* ... */
+//  init_completion(&my_completion);
+//
+//  waiting for completion
+//  void wait_for_completion(struct completion *c);
+//
+//  note this is an uninterruptible wait. if task never completed,
+//  unkillable process
+//
+//  actual completion event may be signalled  by calling one of
+//  void complete(struct completion *c);
+//  void complete_all(struct completion *c);
+//
+//  if more than one thread waiting for same complet event,
+//  complete wakes up one. complete_all allows all to proceed.
+//
+//  can reuse completion structure if no ambiguiity about what event being
+//  signalled.
+//  if complete_all used, must reinitialize completion before reusing it:
+//  INIT_COMPLETION(struct completion c);
+//
+//  for an EXAMPLE, consider the complete module in example source.
+//
+//  typical use of completion mechanism is kernel thread termination
+//  at module exit time.
+//  some driver internal workins performed by kernel thread in while 1 loop.
+//  when ready to be cleaned up, exit function tells thread to exit
+//  and waits for completion.
+//  kernel includes specific function to be used by the thread
+//      void complete_and_exit(struct completion *c, long retval);
+//
+//
+//
+//  Spinlocks
+//  =========
+//  used in code that cannot sleep such as interrupt handlers.
+//  higher general performance than semaphores when used properly.
+//
+//  <linux/spinlock.h>
+//  spinlock_t my_lock = SPIN_LOCK_UNLOCKED;
+//  or
+//  void spin_lock_init(spinlock_t *lock);
+//
+//  obtain lock b4 critical section
+//  void spin_lock(spinlock_t *lock);
+//  Note: All spinlock waits are uninterruptible
+//
+//  release
+//  void spin_unlock(spinlock_t *lock);
+//
+//
+//
+//  Spinlocks and Atomic Context
+//  ============================
+//  core rule for spinlocks is thay any code executed while holding
+//  a spin lock must be atomic. Cannot sleep / relinquish processor.
+//  Maybe not even to service interrupts.
+//
+//  Need to pay attention to every function that you call.
+//
+//  Must disable interrupts while spinlock is held (on local CPU only).
+//  There are spinlock functions that automatically do this, but
+//  wait until Chapter 10 for a complete discussion on interrupts.
+//
+//
+//  More Spinlock Functions
+//  =======================
+//  4 functions that can lock a spinlock
+//  void spin_lock(spinlock_t *lock);
+//  void spin_lock_irqsave(spinlock_t *lock, unsigned long flags);
+//  void spin_lock_irq(spinlock_t *lock);
+//  void spin_lock_bh(spinlock_t *lock);
+//
+//  irqsave disables interrupts (on local processor) b4 taking lock, previous
+//  interrupt state stored in flags (??? Should it be *flags ptr then?)
+//
+//  if are sure that should enable interrupts when release spinlock
+//  (nothing else might've already disabled interrupts) then
+//  spin_lock_irq and don't have to keep track of flags.
+//
+//  bh disables software interrupts but leaves hardware interrupts enabled
+//
+//  if using a spinlock running in sw/hw interrupt context, must use one of the
+//  forms of spin_lock that disables interrupts.
+//
+//  4 ways to restore, corresponding to each of 4 ways to lock
+//  void spin_unlock(spinlock_t *lock);
+//  void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags);
+//  void spin_unlock_irq(spinlock_t *lock);
+//  void spin_unlock_bh(spinlock_t *lock);
+//
+//  flags arg passed to irqrestore must be same var passed to irqsave.
+//  must call save and restore in same function otherwise code may break
+//  on some architectures.
+//
+//  also are nonblocking spinlock operations (return nozero on success)
+//  (return 0 if lock not obtained)
+//  int spin_trylock(spinlock_t *lock);
+//  int spin_trylock_bh(spinlock_t *lock);
+//
+//
+//
+//
+//
+//
+//
+//
