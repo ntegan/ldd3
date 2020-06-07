@@ -1,7 +1,7 @@
 ifneq ($(KERNELRELEASE),)
 
 #kbuild
-obj-m := a.o b.o c.o scull.o
+obj-m := a.o b.o c.o d.o scull.o
 scull-objs := scull/main.o scull/pipe.o scull/access.o
 
 #a-y := one.o two.o
