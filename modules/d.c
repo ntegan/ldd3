@@ -307,6 +307,62 @@ module_exit(hello_exit);
 //
 //  Locking Traps
 //  =============
+//  https://ossi.sgi.com/projects/lockmeter  
+//  TODO: come back here if get locking issues i guess
+//
+//
+//
+//  Lock-Free Algorithms
+//  ====================
+//  Circular Buffers
+//  (must be careful to avoid pointers crossing eachother)
+//  these show up relatively often in device drivers.
+//  Net adaptors use circ buffs to exchange packets w/ processor.
+//
+//  as of 2.6.10 there is a generic circ buff implemenatation in kernel  
+//  <linux/kfifo.h>
+//
+//
+//
+//  Atomic Variables (integers)
+//  ================
+//  sometimes shared resource is just a single integeer value.
+//
+//  kernel provides atomic integer type atomic_t in <asm/atomic.h>
+//  not guaranteed to have more than 24 bits of int
+//
+//  operations:
+//  atomic set, read, add, sub, inc, dec, incandtest, decandtest, subandtest,
+//  addnegative,addreturn,subreturn,increturn,decreturn
+//
+//  note: operations requiring multiple atomic_t values require additional
+//  locking
+//  e.g.
+//  ```
+//  atomic_sub(amount, &first_atomic);
+//  atomic_sub(amount, &second_atomic);
+//  ```
+//
+//  Atomic Bit operations
+//  =====================
+//  <asm/bitops.h>
+//  set bit, clear bit, change bit, test bit, test and set bit,
+//  test and clear bit, test and change bit
+//
+//
+//
+//  Seqlocks
+//  ========
+//  blah blah blah
+//
+//
+//
+//  Read-Copy-Update
+//  ================
+//  optimized for common reads, and rare writes.
+//  see creator whitepaper
+//  http://www.rdrop.com/users/paulmck/rclock/intro/rclock_intro.html
+//  <linux/rcupdate.h>
 //
 //
 //
