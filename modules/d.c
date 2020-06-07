@@ -262,6 +262,51 @@ module_exit(hello_exit);
 //  int spin_trylock(spinlock_t *lock);
 //  int spin_trylock_bh(spinlock_t *lock);
 //
+//  
+//
+//  Reader/Writer Spinlocks
+//  =======================
+//  rwlock_t def'd in <linux/spinlock.h>
+//
+//  static
+//  rwlock_t my_rwlock = RW_LOCK_UNLOCKED;
+//  dynamic
+//  rwlock_t my_rwlock;
+//  rwlock_init(&my_rwlock);
+//
+//  for readers
+//  void read_lock(rwlock_t *lock);
+//  void read_lock_irqsave(rwlock_t *lock, unsigned long flags);
+//  void read_lock_irq(rwlock_t *lock);
+//  void read_lock_bh(rwlock_t *lock);
+//
+//  void read_unlock(rwlock_t *lock);
+//  void read_unlock_irqrestore(rwlock_t *lock, unsigned long flags);
+//  void read_unlock_irq(rwlock_t *lock);
+//  void read_unlock_bh(rwlock_t *lock);
+//
+//  no read_trylock
+//
+//  for writers
+//  void write_lock(rwlock_t *lock);
+//  void write_lock_irqsave(rwlock_t *lock, unsigned long flags);
+//  void write_lock_irq(rwlock_t *lock);
+//  void write_lock_bh(rwlock_t *lock);
+//  int write_trylock(rwlock_t *lock);
+//
+//  void write_unlock(rwlock_t *lock);
+//  void write_unlock_irqrestore(rwlock_t *lock, unsigned long flags);
+//  void write_unlock_irq(rwlock_t *lock);
+//  void write_unlock_bh(rwlock_t *lock);
+//
+//  rw spinlocks can starve readers too.
+//  not as common a problem, as if lock contention is bad enough to bring
+//  starvation, performance is poor anyways.
+//
+//
+//
+//  Locking Traps
+//  =============
 //
 //
 //
