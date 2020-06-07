@@ -247,6 +247,7 @@ module_exit(hello_exit);
 //
 //  A Blocking I/O Example
 //  ======================
+//  leftoff here TODO: p19/48
 //
 //
 //
