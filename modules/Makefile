@@ -1,14 +1,20 @@
 ifneq ($(KERNELRELEASE),)
 
 #kbuild
-obj-m := a.o b.o c.o d.o scull.o
-scull-objs := scull/main.o scull/pipe.o scull/access.o
+obj-m := 0.o
+#obj-m := a.o b.o c.o d.o scull.o 0.o
+#scull-objs := scull/main.o scull/pipe.o scull/access.o
+#scull-objs := scull/main.o scull/pipe.o scull/access.o
 
 #a-y := one.o two.o
 
 else
 #normal makefile
-KDIR ?= ../../hello_modules/linux
+# compiling for compiled updstream kernel
+#KDIR ?= ../../hello_modules/linux
+
+# compiling for my running kernel
+KDIR ?= /lib/modules/5.9.1-arch1-1/build/
 
 default:
 	$(MAKE) -C $(KDIR) M=$$PWD

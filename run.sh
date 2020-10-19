@@ -1,10 +1,11 @@
+set -euxo pipefail
 #!/bin/bash
 KERNEL=../hello_modules/linux/arch/$(uname -m)/boot/bzImage
-INITRAMFS=../hello_modules/mkroot/output/host/root.cpio.gz
+INITRAMFS=../hello_modules/mkroot/root.cpio.gz
 
+    #cp modules/scull_load ../hello_modules/mkroot/output/host/root/home && \
 make && \
     cp modules/*.ko ../hello_modules/modules/ && \
-    cp modules/scull_load ../hello_modules/mkroot/output/host/root/home && \
     (cd ../hello_modules && bash make.sh)
 
 
