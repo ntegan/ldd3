@@ -14,7 +14,8 @@ else
 #KDIR ?= ../../hello_modules/linux
 
 # compiling for my running kernel
-KDIR ?= /lib/modules/5.9.1-arch1-1/build/
+#KDIR ?= /lib/modules/5.9.1-arch1-1/build/
+KDIR ?= /lib/modules/5.8.14-arch1-1/build
 
 default:
 	$(MAKE) -C $(KDIR) M=$$PWD
@@ -24,3 +25,5 @@ clean2: clean
 	rm -f *.ko
 
 endif
+
+

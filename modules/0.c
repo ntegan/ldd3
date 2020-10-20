@@ -7,9 +7,11 @@
 #include <linux/init.h>
 #include <linux/ioctl.h>
 #include <linux/module.h>
+#include <linux/signal.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
+#include <linux/vmalloc.h>
 
 #define KMOD_NUM_MINORS 1
 #define KMOD_DEV_NAME "/dev/egan"
@@ -60,6 +62,49 @@ int do_something(unsigned long arg) {
   }
   return -1;
 }
+unsigned long count_number_of_processes(void) {
+  struct task_struct *task = &init_task;
+  unsigned long num_tasks = 0;
+
+  do {
+    num_tasks++;
+    task = list_entry(task->tasks.next, struct task_struct, tasks);
+  } while (task != &init_task);
+  return num_tasks;
+}
+int do_process_info_request_first_time(unsigned long arg) {
+  unsigned int num_procs = count_number_of_processes();
+
+  return 0;
+}
+int do_process_info_request_second_time(unsigned long arg) { return 0; }
+int do_process_info_request(unsigned long arg) {
+  // arg is kmod_process_request*
+
+  unsigned long num_processes_requested = 0;
+  kmod_process_request *kpr;
+  if (access_ok(arg, sizeof(kmod_process_request)) == 0) {
+    printk(KERN_ALERT "egan: definitely invalid\n");
+    // definitely invalid
+    return -1;
+  }
+  kpr = (kmod_process_request *)vmalloc(1 * sizeof(kmod_process_request));
+  if (!kpr) return -3;
+  if (0 != copy_from_user(kpr, (void *)arg, 1 * sizeof(kmod_process_request))) {
+    // still some bytes left to copy
+    vfree(kpr);
+    return -2;
+  }
+  copy_to_user(kpr->p_process_infos, "HELLO\n\0", 7);
+  vfree(kpr);
+  printk(KERN_ALERT "egan: user requested %ld processes\n",
+         kpr->num_process_infos_requested);
+  if (kpr->num_process_infos_requested == 0) {
+    return do_process_info_request_first_time(arg);
+  } else {
+    return do_process_info_request_second_time(arg);
+  }
+}
 long fops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
   switch (cmd) {
     case KMOD_IOA:
@@ -72,6 +117,11 @@ long fops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
     case KMOD_IOC:
       break;
     case KMOD_IOD:
+      // rw
+      // arg is usr
+      if (do_process_info_request(arg)) {
+        return -EFAULT;
+      }
       break;
     default:
       return -ENOTTY;
@@ -133,6 +183,18 @@ static int ___init(void) {
   }
   printk(KERN_ALERT "egan: successful dev init\n");
 
+  struct task_struct *task;
+  /*
+  for (task = current; task != &init_task; task = task->parent) {
+    printk(KERN_INFO "egan: pid %d", task->pid);
+  }
+  // task is nw init task
+  */
+  task = &init_task;
+  do {
+    // printk(KERN_INFO "egan: %d\t%s\n", task->pid, task->comm);
+    task = list_entry(task->tasks.next, struct task_struct, tasks);
+  } while (task != &init_task);
   return 0;
 }
 
