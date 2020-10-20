@@ -15,15 +15,26 @@ int open_my_device() {
 int do_the_ioctl(int dev_fd) {
   kmod_process_request kpr = {
       .num_process_infos_requested = 0,
-      .p_process_infos = 0xBEEF,
+      .p_process_infos = NULL,
   };
-  kpr.p_process_infos = malloc(1024 * sizeof(char));
-  memset((void *)kpr.p_process_infos, 0, 1024 * sizeof(char));
   int result = ioctl(dev_fd, KMOD_IOD, &kpr);
   if (result) return result;
-  if (strlen((char *)kpr.p_process_infos) > 1) {
-    printf("it was omore than 1\n");
-    printf("got string: %s\n", (char *)kpr.p_process_infos);
+  printf("got num_procs: %ld\n", kpr.num_process_infos_requested);
+
+  kpr.num_process_infos_requested *= 2;
+  unsigned long num_procs = kpr.num_process_infos_requested;
+  kpr.p_process_infos =
+      (kmod_process_info *)malloc(num_procs * sizeof(kmod_process_info));
+  memset((void *)kpr.p_process_infos, 0, num_procs * sizeof(kmod_process_info));
+  kpr.num_process_infos_fulfilled = 0;
+
+  result = ioctl(dev_fd, KMOD_IOD, &kpr);
+  if (result) return result;
+  printf("got num_procs fulfilled: %ld\n", kpr.num_process_infos_fulfilled);
+
+  for (int i = 0; i < kpr.num_process_infos_fulfilled; i++) {
+    printf("pid %ld, mm 0x%016lX, name %s\n", kpr.p_process_infos[i].pid,
+           kpr.p_process_infos[i].p_mm, kpr.p_process_infos[i].comm);
   }
 
   free(kpr.p_process_infos);

@@ -6,9 +6,11 @@
 #include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/ioctl.h>
+#include <linux/mm_types.h>
 #include <linux/module.h>
 #include <linux/signal.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
@@ -72,34 +74,100 @@ unsigned long count_number_of_processes(void) {
   } while (task != &init_task);
   return num_tasks;
 }
-int do_process_info_request_first_time(unsigned long arg) {
-  unsigned int num_procs = count_number_of_processes();
-
-  return 0;
-}
-int do_process_info_request_second_time(unsigned long arg) { return 0; }
-int do_process_info_request(unsigned long arg) {
-  // arg is kmod_process_request*
-
-  unsigned long num_processes_requested = 0;
+unsigned long kpr_num_processes_requested(unsigned long arg) {
   kmod_process_request *kpr;
   if (access_ok(arg, sizeof(kmod_process_request)) == 0) {
     printk(KERN_ALERT "egan: definitely invalid\n");
-    // definitely invalid
-    return -1;
+    return 0;
   }
   kpr = (kmod_process_request *)vmalloc(1 * sizeof(kmod_process_request));
-  if (!kpr) return -3;
+  if (!kpr) return 0;
   if (0 != copy_from_user(kpr, (void *)arg, 1 * sizeof(kmod_process_request))) {
     // still some bytes left to copy
     vfree(kpr);
+    return 0;
+  }
+  vfree(kpr);
+  return kpr->num_process_infos_requested;
+}
+kmod_process_info *kpr_p_process_infos(unsigned long arg) {
+  kmod_process_request *kpr;
+  if (access_ok(arg, sizeof(kmod_process_request)) == 0) {
+    printk(KERN_ALERT "egan: definitely invalid\n");
+    return NULL;
+  }
+  kpr = (kmod_process_request *)vmalloc(1 * sizeof(kmod_process_request));
+  if (!kpr) return NULL;
+  if (0 != copy_from_user(kpr, (void *)arg, 1 * sizeof(kmod_process_request))) {
+    // still some bytes left to copy
+    vfree(kpr);
+    return NULL;
+  }
+  vfree(kpr);
+  return kpr->p_process_infos;
+}
+int kpr_num_processes_fulfilled(unsigned long arg, unsigned long fulfilled) {
+  kmod_process_request *kpr;
+  if (access_ok(arg, sizeof(kmod_process_request)) == 0) {
+    printk(KERN_ALERT "egan: definitely invalid\n");
+    return -1;
+  }
+  kpr = (kmod_process_request *)arg;
+  if (0 != copy_to_user(&kpr->num_process_infos_fulfilled, &fulfilled,
+                        1 * sizeof(unsigned long))) {
+    // still some bytes left to copy
+    return -1;
+  }
+  return 0;
+}
+int do_process_info_request_first_time(unsigned long arg) {
+  unsigned long num_procs = count_number_of_processes();
+  kmod_process_request *kpr = (kmod_process_request *)arg;
+  if (0 != copy_to_user(&kpr->num_process_infos_requested, &num_procs,
+                        sizeof(unsigned long))) {
+    return -1;
+  }
+
+  return 0;
+}
+int do_process_info_request_second_time(unsigned long arg) {
+  kmod_process_info *p_kpi = kpr_p_process_infos(arg);
+  if (!p_kpi) {
+    printk(KERN_ALERT "egan: couldn't get p_kpi\n");
+    return -1;
+  }
+
+  struct task_struct *task;
+  task = &init_task;
+  unsigned long num_tasks;
+  num_tasks = 0;
+
+  kmod_process_info kpi;
+  do {
+    kpi.pid = task->pid;
+    kpi.p_mm = (unsigned long)task->mm;
+    strcpy(kpi.comm, task->comm);
+    if (0 != copy_to_user(&p_kpi[num_tasks], &kpi, sizeof(kmod_process_info))) {
+      printk(KERN_ALERT "egan: couldn't copy pki %ld\n", num_tasks);
+      return -1;
+    }
+
+    num_tasks++;
+    task = list_entry(task->tasks.next, struct task_struct, tasks);
+  } while (task != &init_task);
+
+  if (kpr_num_processes_fulfilled(arg, num_tasks)) {
     return -2;
   }
-  copy_to_user(kpr->p_process_infos, "HELLO\n\0", 7);
-  vfree(kpr);
+  return 0;
+}
+
+int do_process_info_request(unsigned long arg) {
+  // arg is kmod_process_request*
+  unsigned long num_processes_requested = kpr_num_processes_requested(arg);
   printk(KERN_ALERT "egan: user requested %ld processes\n",
-         kpr->num_process_infos_requested);
-  if (kpr->num_process_infos_requested == 0) {
+         num_processes_requested);
+  if (num_processes_requested == 0) {
     return do_process_info_request_first_time(arg);
   } else {
     return do_process_info_request_second_time(arg);
